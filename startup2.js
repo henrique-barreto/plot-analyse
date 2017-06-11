@@ -1,19 +1,3 @@
-function createCanvas(img, canvas) {
-
-    var left = 122;
-    var top = 142;
-    var desiredWidth = 1147;
-    var desiredHeight = 667;
-
-    //create canvas to read pixels
-    canvas.width = desiredWidth;
-    canvas.height = desiredHeight;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, left, top, desiredWidth, desiredHeight, 0, 0, desiredWidth, desiredHeight);
-
-    return ctx;
-}
-
 function isWhiteLine(pixelData) {
 
     if (pixelData[0] > 100 && pixelData[1] > 100 && pixelData[2] > 100) {
@@ -21,87 +5,64 @@ function isWhiteLine(pixelData) {
     }
     return false;
 }
-function buildChart(datas) {
-    var ctx = document.getElementById("myChart").getContext('2d');
-    ctx.height = 200;
-    ctx.width = 342;
-    var scatterChart = new Chart(ctx, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Scatter Dataset',
-                data: datas
-            }]
-        },
-        options: {
-            animation: false,
-            scales: {
-                xAxes: [{
-                    type: 'linear',
-                    position: 'bottom'
-                }]
-            },
-            elements: {
-                point: {
-                    radius: 0
-                }
-            },
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-}
-var showImageCroped = function (canvas) {
-    var src = document.getElementById("wrapper");
-    while (src.firstChild) {
-        src.removeChild(src.firstChild);
-    }
-    src.appendChild(canvas);
-};
-function isSafe(datas, x, y) {
 
-    if (datas.length === 0)
+
+function isBrightWhite(pixelBuyLine) {
+
+    var r = pixelBuyLine[0];
+    var g = pixelBuyLine[1];
+    var b = pixelBuyLine[2];
+
+    var whiter = 240;
+    var whiteg = 240;
+    var whiteb = 240;
+
+    if (checkDiff(r, whiter) < 40 && checkDiff(g, whiteg) < 40 && checkDiff(b, whiteb) < 40) {
         return true;
-
-    var data = datas[datas.length - 1];
-    var xDiff = checkDiff(data.x, x);
-    var yDiff = checkDiff(data.y, y);
-
-    if (xDiff > 50 || yDiff > 50)
-        return false;
-
-    return true;
-
+    }
+    return false;
 }
+
+function isRedLine(pixelData) {
+    var r = pixelData[0];
+    var g = pixelData[1];
+    var b = pixelData[2];
+
+    var redr = 209;
+    var redg = 63;
+    var redb = 46;
+
+    if (checkDiff(r, redr) < 30 && checkDiff(g, redg) < 30 && checkDiff(b, redb) < 30) {
+        return true;
+    }
+
+    var darkRedr = 86;
+    var darkRedg = 16;
+    var darkRedb = 18;
+
+    if (checkDiff(r, darkRedr) < 30 && checkDiff(g, darkRedg) < 30 && checkDiff(b, darkRedb) < 30) {
+        return true;
+    }
+
+    var lightRedr = 160;
+    var lightRedg = 94;
+    var lightRedb = 89;
+
+    if (checkDiff(r, lightRedr) < 30 && checkDiff(g, lightRedg) < 30 && checkDiff(b, lightRedb) < 30) {
+        return true;
+    }
+
+    return false;
+}
+
+function showImageCroped(canvas) {
+    console.log('sending image');
+    var port = chrome.runtime.connect({name: "cropedImage"});
+    port.postMessage(canvas.toDataURL("image/png"));
+}
+
 function checkData(datas) {
 
-    // if (datas.length === 0)
-    //     return;
-    //
-    // var hour = new Date();
-    // var alert = {mode: '5', x: 440, y: 434, Date:hour}
-    //
-    //
-    // var lastX = datas[datas.length - 1].x;
-    // var lastY = datas[datas.length - 1].y;
-    //
-    // var maxXvar = 400;
-    // var minXvar = 200;
-    //
-    // var
-    //
-    // //no modo 5 min considerar variacoes de y no intervalo de 200 a 400
-    //
-    // for (var i = 0; i < datas.length; i++) {
-    //     var x = datas[i].x;
-    //     var y = datas[i].y;
-    //
-    //
-    //     if (lastX - maxXvar > x) {
-    //
-    //     }
-    //
-    // }
 
     var spaceOnLx = 150;
     var maxXvariation = 300;
@@ -113,7 +74,7 @@ function checkData(datas) {
     var nx = lx - spaceOnLx;
     var mx = nx - maxXvariation;
 
-    var playAlert =  false;
+    var playAlert = false;
 
     for (var i = 0; i < datas.length; i++) {
         var x = datas[i].x;
@@ -144,32 +105,35 @@ function checkDiff(num1, num2) {
 }
 
 
+function sendPlotData(datas, whiteLineXPosition, redLineXPosition) {
+
+    var plotObj = {datas:datas, whiteLineXPosition: whiteLineXPosition, redLineXPosition: redLineXPosition};
+
+    console.log('sendind data');
+    var port = chrome.runtime.connect({name: "plotPort"});
+    port.postMessage(plotObj);
+
+}
+
+
 function analyzeImage(image64) {
-
-
 
     var img = document.createElement("img");
     img.src = image64;
-    var imageWidth = img.width;
-    var imageHeight = img.height;
-
-    var left = 122;
-    var top = 142;
-    var desiredWidth = 1147;
-    var desiredHeight = 667;
 
     //create canvas to read pixels
     var canvas = document.createElement('canvas');
-    canvas.width = desiredWidth;
-    canvas.height = desiredHeight;
+    canvas.width = iqImagePlot.width;
+    canvas.height = iqImagePlot.height;
     var ctx = canvas.getContext('2d');
-    ctx.fillStyle = "#FF0000";
-    ctx.drawImage(img, left, top, desiredWidth, desiredHeight, 0, 0, desiredWidth, desiredHeight);
-
+    ctx.fillStyle = "#001dff";
+    ctx.drawImage(img, iqImagePlot.left, iqImagePlot.top, iqImagePlot.width, iqImagePlot.height, 0, 0, iqImagePlot.width, iqImagePlot.height);
 
     var datas = [];
-    for (var x = 0; x < desiredWidth; x = x + 1) {
-        for (var y = desiredHeight; y > 0; y--) {
+    var redLineXPosition = 1;
+    var whiteLineXPosition = 1;
+    for (var x = 0; x < iqImagePlot.width; x = x + 1) {
+        for (var y = iqImagePlot.height; y > 0; y--) {
 
             var pixelData = ctx.getImageData(x, y, 1, 1).data;
 
@@ -182,27 +146,70 @@ function analyzeImage(image64) {
                 if (isWhiteLine(pixelDataY2) && isWhiteLine(pixelDataY3)) {
                     //console.log('x: ' + x + ' y: ' + y + ' pixel> ' + pixelData);
                     //if (isSafe(datas, x, y))
-                        datas.push({x: x, y: (y - desiredWidth) * (-1)});
-                    ctx.fillRect(x, y, 5, 5);
+                    datas.push({x: x, y: (y - iqImagePlot.width) * (-1)});
+                    //fill red square to test image
+                    ctx.fillRect(x, y, 2, 2);
                     break;
+                }
+            } else if (isRedLine(pixelData)) {
+
+                var pixelY2 = ctx.getImageData(x, y - 1, 1, 1).data;
+                var pixelY3 = ctx.getImageData(x, y - 2, 1, 1).data;
+                var pixelY4 = ctx.getImageData(x, y - 3, 1, 1).data;
+                //check if next 3 pixels are red too
+                if (isRedLine(pixelY2) && isRedLine(pixelY3) && isRedLine(pixelY4)) {
+                    redLineXPosition = x;
+                    for (var deltay2 = 0; deltay2 < iqImagePlot.height; deltay2++) {
+                        ctx.fillRect(x, deltay2, 2, 2);
+                    }
+
+                    break;
+                }
+            }
+
+            if (isBrightWhite(pixelData)) {
+                //check buy limit line
+
+                //get middle of screen
+                var pixelBuyLine = ctx.getImageData(x, y, 1, 1).data;
+                console.log('is white line');
+                if (isBrightWhite(pixelBuyLine)) {
+
+
+                    var pixelBuyLine2 = ctx.getImageData(x, y + 4, 1, 1).data;
+                    var pixelBuyLine3 = ctx.getImageData(x, y + 8, 1, 1).data;
+                    var pixelBuyLine4 = ctx.getImageData(x, y + 12, 1, 1).data;
+                    var pixelBuyLine5 = ctx.getImageData(x, y + 16, 1, 1).data;
+
+                    if (isBrightWhite(pixelBuyLine2) &&
+                        isBrightWhite(pixelBuyLine3) &&
+                        isBrightWhite(pixelBuyLine4) &&
+                        isBrightWhite(pixelBuyLine5)) {
+
+                        whiteLineXPosition = x;
+                        for (var deltay = 0; deltay < iqImagePlot.height; deltay++) {
+                            ctx.fillRect(x, deltay, 2, 2);
+                        }
+                        break;
+                    }
                 }
 
             }
+
+
 
         }
     }
 
     //showImageCroped(canvas);
 
-    buildChart(datas);
-
-    checkData(datas);
+    //checkData(datas);
+    sendPlotData(datas, whiteLineXPosition, redLineXPosition);
 
 }
 
 function getImage(callback) {
 
-    console.log('Taking ss');
     chrome.tabs.captureVisibleTab(null, {}, function (image) {
         console.log('capturanto imagem');
         callback(image);
@@ -215,14 +222,43 @@ function start() {
 
         getImage(analyzeImage);
 
-
-        start();
+        if (startBackground) {
+            start();
+        }
     }, 5000);
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    var link = document.getElementById('start');
-    link.addEventListener('click', function () {
+var iqImagePlot = {
+    left: 198,
+    top: 126,
+    width: 1407,
+    height: 713,
+    secondsOn5mMode: (60 * 4) + 30 // 1407 width pixels = 04:30
+};
+
+var startBackground = false;
+
+function handleAction(action) {
+
+    if (action == 'start') {
+        console.log('staring');
+        startBackground = true;
         start();
-    });
+        return {message: 'started'};
+    } else {
+        console.log('stoping');
+        startBackground = false;
+        return {message: 'stoped'};
+    }
+
+}
+
+chrome.extension.onMessage.addListener(function (request, sender, sendResponse) {
+
+    console.log('Receiving message:');
+    var response = 'unhandled response';
+    if (request.action) {
+        response = handleAction(request.action);
+    }
+    sendResponse(response);
 });
