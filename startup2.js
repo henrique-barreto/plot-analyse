@@ -42,7 +42,7 @@ function buildChart(datas) {
                 }]
             },
             elements: {
-                point:{
+                point: {
                     radius: 0
                 }
             },
@@ -58,16 +58,100 @@ var showImageCroped = function (canvas) {
     }
     src.appendChild(canvas);
 };
+function isSafe(datas, x, y) {
+
+    if (datas.length === 0)
+        return true;
+
+    var data = datas[datas.length - 1];
+    var xDiff = checkDiff(data.x, x);
+    var yDiff = checkDiff(data.y, y);
+
+    if (xDiff > 50 || yDiff > 50)
+        return false;
+
+    return true;
+
+}
+function checkData(datas) {
+
+    // if (datas.length === 0)
+    //     return;
+    //
+    // var hour = new Date();
+    // var alert = {mode: '5', x: 440, y: 434, Date:hour}
+    //
+    //
+    // var lastX = datas[datas.length - 1].x;
+    // var lastY = datas[datas.length - 1].y;
+    //
+    // var maxXvar = 400;
+    // var minXvar = 200;
+    //
+    // var
+    //
+    // //no modo 5 min considerar variacoes de y no intervalo de 200 a 400
+    //
+    // for (var i = 0; i < datas.length; i++) {
+    //     var x = datas[i].x;
+    //     var y = datas[i].y;
+    //
+    //
+    //     if (lastX - maxXvar > x) {
+    //
+    //     }
+    //
+    // }
+
+    var spaceOnLx = 150;
+    var maxXvariation = 300;
+
+    var lx = datas[datas.length - 1].x;
+    var ly = datas[datas.length - 1].y;
+    console.log('last x: ' + lx);
+    console.log('last x: ' + ly);
+    var nx = lx - spaceOnLx;
+    var mx = nx - maxXvariation;
+
+    var playAlert =  false;
+
+    for (var i = 0; i < datas.length; i++) {
+        var x = datas[i].x;
+        var y = datas[i].y;
+
+        if (x > mx && x < nx) {
+            //esta dentro do intervalo
+            //check y
+            //console.log('dentro do intevalo: ' + x);
+
+            if (checkDiff(y, ly) > 400) {
+                console.log('Temos um campeao');
+                playAlert = true;
+            }
+        }
+
+    }
+
+    if (playAlert) {
+        var audio = new Audio('sound/alert.wav');
+        audio.play();
+    }
+
+}
+
+function checkDiff(num1, num2) {
+    return (num1 > num2) ? num1 - num2 : num2 - num1;
+}
+
+
 function analyzeImage(image64) {
 
-    console.log('analyzing image');
+
 
     var img = document.createElement("img");
     img.src = image64;
     var imageWidth = img.width;
     var imageHeight = img.height;
-    console.log('width: ' + imageWidth);
-    console.log('Height: ' + imageHeight);
 
     var left = 122;
     var top = 142;
@@ -97,7 +181,8 @@ function analyzeImage(image64) {
 
                 if (isWhiteLine(pixelDataY2) && isWhiteLine(pixelDataY3)) {
                     //console.log('x: ' + x + ' y: ' + y + ' pixel> ' + pixelData);
-                    datas.push({x: x, y: (y - desiredWidth) * (-1)});
+                    //if (isSafe(datas, x, y))
+                        datas.push({x: x, y: (y - desiredWidth) * (-1)});
                     ctx.fillRect(x, y, 5, 5);
                     break;
                 }
@@ -109,8 +194,10 @@ function analyzeImage(image64) {
 
     //showImageCroped(canvas);
 
-    console.log(datas);
     buildChart(datas);
+
+    checkData(datas);
+
 }
 
 function getImage(callback) {
@@ -125,8 +212,6 @@ function getImage(callback) {
 
 function start() {
     setTimeout(function () {
-
-        console.log('working...');
 
         getImage(analyzeImage);
 
