@@ -107,7 +107,7 @@ function checkDiff(num1, num2) {
 
 function sendPlotData(datas, whiteLineXPosition, redLineXPosition) {
 
-    var plotObj = {datas:datas, whiteLineXPosition: whiteLineXPosition, redLineXPosition: redLineXPosition};
+    var plotObj = {datas: datas, whiteLineXPosition: whiteLineXPosition, redLineXPosition: redLineXPosition};
 
     console.log('sendind data');
     var port = chrome.runtime.connect({name: "plotPort"});
@@ -132,7 +132,14 @@ function analyzeImage(image64) {
     var datas = [];
     var redLineXPosition = 1;
     var whiteLineXPosition = 1;
+    var foundRedLine = false;
     for (var x = 0; x < iqImagePlot.width; x = x + 1) {
+
+        if (foundRedLine) {
+            console.log('found red line');
+            break;
+        }
+
         for (var y = iqImagePlot.height; y > 0; y--) {
 
             var pixelData = ctx.getImageData(x, y, 1, 1).data;
@@ -153,18 +160,22 @@ function analyzeImage(image64) {
                 }
             } else if (isRedLine(pixelData)) {
 
-                var pixelY2 = ctx.getImageData(x, y - 1, 1, 1).data;
-                var pixelY3 = ctx.getImageData(x, y - 2, 1, 1).data;
-                var pixelY4 = ctx.getImageData(x, y - 3, 1, 1).data;
-                //check if next 3 pixels are red too
-                if (isRedLine(pixelY2) && isRedLine(pixelY3) && isRedLine(pixelY4)) {
+                foundRedLine = false;
+                for (var qtdVezes = 1; qtdVezes < 10; qtdVezes++) {
+                    var pixelY2 = ctx.getImageData(x, y - qtdVezes, 1, 1).data;
+                    if (isRedLine(pixelY2)) {
+                        if (qtdVezes === 9)
+                            foundRedLine = true;
+                    }
+                }
+                if (foundRedLine) {
                     redLineXPosition = x;
                     for (var deltay2 = 0; deltay2 < iqImagePlot.height; deltay2++) {
                         ctx.fillRect(x, deltay2, 2, 2);
                     }
-
                     break;
                 }
+
             }
 
             if (isBrightWhite(pixelData)) {
@@ -195,8 +206,6 @@ function analyzeImage(image64) {
                 }
 
             }
-
-
 
         }
     }
